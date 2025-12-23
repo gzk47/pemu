@@ -1,0 +1,102 @@
+name: switch-release-20251223
+
+on:
+  push:
+    tags:
+      - "v*.*"
+  workflow_dispatch:
+
+jobs:
+  build-switch-release:
+    runs-on: ubuntu-24.04
+    container: devkitpro/devkita64:latest
+    defaults:
+      run:
+        shell: bash
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt -yq update
+          sudo apt -yq install git build-essential cmake zip
+      - name: Configure
+        run: |
+          cd $GITHUB_WORKSPACE
+          mkdir cmake-build && cd cmake-build
+          cmake -G "Unix Makefiles" -DPLATFORM_SWITCH=ON -DCMAKE_BUILD_TYPE=Release ..
+      - name: Build pfbneo
+        run: |
+          cd $GITHUB_WORKSPACE/cmake-build
+          make pfbneo.deps
+          make pfbneo.nro
+          mv src/cores/pfbneo/pfbneo.nro $GITHUB_WORKSPACE
+      - name: Build pgen
+        run: |
+          cd $GITHUB_WORKSPACE/cmake-build
+          make pgen.nro
+          mv src/cores/pgen/pgen.nro $GITHUB_WORKSPACE
+      - name: Build pnes
+        run: |
+          cd $GITHUB_WORKSPACE/cmake-build
+          make pnes.nro
+          mv src/cores/pnes/pnes.nro $GITHUB_WORKSPACE
+      - name: Build psnes
+        run: |
+          cd $GITHUB_WORKSPACE/cmake-build
+          make psnes.nro
+          mv src/cores/psnes/psnes.nro $GITHUB_WORKSPACE
+      - name: Build pgba
+        run: |
+          cd $GITHUB_WORKSPACE/cmake-build
+          make pgba.nro
+          mv src/cores/pgba/pgba.nro $GITHUB_WORKSPACE
+      - name: Set release variables
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          # Extract version from CMakeLists.txt
+          VERSION_MAJOR=$(grep -oP 'set\(VERSION_MAJOR \K[0-9]+' $GITHUB_WORKSPACE/CMakeLists.txt)
+          VERSION_MINOR=$(grep -oP 'set\(VERSION_MINOR \K[0-9]+' $GITHUB_WORKSPACE/CMakeLists.txt)
+          BASE_VERSION="v${VERSION_MAJOR}.${VERSION_MINOR}"
+          
+          # Set release version based on event type
+          if [[ $GITHUB_EVENT_NAME == "push" && ${{ github.ref_type }} == "tag" ]]; then
+            RELEASE_VERSION=${{ github.ref_name }}
+          else
+            RELEASE_VERSION="${BASE_VERSION}-$(date +%Y%m%d)-$(git rev-parse --short HEAD)"
+          fi
+          
+          echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: PEMU Switch ${{ env.RELEASE_VERSION }}
+          files: ${{ github.workspace }}/*.nro
+          generate_release_notes: true
+          prerelease: false
+          overwrite_files: true
+          body: |
+            ## PEMU Switch 版
+            本次发布包含以下模拟器核心：
+            - **pfbneo**: FBNeo 街机模拟器
+            - **pgen**: Genesis/Mega Drive 模拟器
+            - **pnes**: NES/FC 模拟器
+            - **psnes**: SNES/SFC 模拟器
+            - **pgba**: GBA 模拟器
+            ### 使用说明
+            1. 将 `.nro` 文件解压至 Switch 的 `switch/` 目录下
+            2. 通过 Atmosphère 自制软件菜单启动
+            3. 支持 ROM 文件加载与管理
+            ### 构建信息
+            - 构建时间: ${{ env.BUILD_TIME }}
+            - 提交哈希: ${{ github.sha }}
+            - 触发分支: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
