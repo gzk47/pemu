@@ -8,9 +8,9 @@
 using namespace c2d::config;
 using namespace ss_api;
 
-PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
-    : Config(name, io->getDataPath() + "config.cfg", version) {
-    p_io = io;
+PEMUConfig::PEMUConfig(Renderer *renderer, const std::string &name, int version)
+    : Config(name, renderer->getIo()->getDataPath() + "config.cfg", version) {
+    p_renderer = renderer;
 
     /*
      * ROMS PATHS
@@ -19,7 +19,7 @@ PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
     addGroup(roms);
 
     /// UI_FILTERING
-    Group ui_filtering("UI_FILTERING", GrpId::UI_FILTERING);
+    Group ui_filtering("UI_FILTERING", UI_FILTERING);
     ui_filtering.addOption({"FILTER_FAVORITES", {"OFF", "ON"}, 0, UI_FILTER_FAVORITES});
     ui_filtering.addOption({"FILTER_MISSING", {"OFF", "ON"}, 1, UI_FILTER_AVAILABLE});
     ui_filtering.addOption({"FILTER_CLONES", {"OFF", "ON"}, 1, UI_FILTER_CLONES})->setFlags(HIDDEN);
@@ -33,7 +33,7 @@ PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
     addGroup(ui_filtering);
 
     /// UI_OPTIONS
-    Group main("UI_OPTIONS", GrpId::UI_OPTIONS);
+    Group main("UI_OPTIONS", UI_OPTIONS);
     main.addOption({"SHOW_ZIP_NAMES", {"OFF", "ON"}, 1, UI_SHOW_ZIP_NAMES});
 #ifdef __FULLSCREEN__
     main.addOption({"FULLSCREEN", {"OFF", "ON"}, 1, UI_FULLSCREEN, PEMU_CONFIG_RESTART_NEEDED});
@@ -55,7 +55,7 @@ PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
     // add default skins from romfs
     skins.emplace_back("default");
     // add skins from romfs dir
-    auto files = io->getDirList(io->getRomFsPath() + "skins/", true);
+    auto files = p_renderer->getIo()->getDirList(p_renderer->getIo()->getRomFsPath() + "skins/", true);
     for (auto &file: files) {
         if (file.type != c2d::Io::Type::Directory || file.name[0] == '.') {
             continue;
@@ -67,7 +67,7 @@ PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
         }
     }
     // add skins from data dir
-    files = io->getDirList(io->getDataPath() + "skins/", true);
+    files = p_renderer->getIo()->getDirList(p_renderer->getIo()->getDataPath() + "skins/", true);
     for (auto &file: files) {
         if (file.type != c2d::Io::Type::Directory || file.name[0] == '.') {
             continue;
@@ -110,7 +110,11 @@ PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
 
     emu_grp.addOption({"SCALING_MODE", {"AUTO", "ASPECT", "INTEGER"}, 1, EMU_SCALING_MODE});
     emu_grp.addOption({"FILTER", {std::string("POINT"), std::string("LINEAR")}, 1, EMU_FILTER});
-    emu_grp.addOption({"EFFECT", {"NONE"}, 0, EMU_SHADER})->setFlags(HIDDEN);
+    if (const auto shaderList = p_renderer->getShaderList()) {
+        emu_grp.addOption({"EFFECT", shaderList->getNames(), 0, EMU_SHADER});
+    } else {
+        emu_grp.addOption({"EFFECT", {"c2d-texture"}, 0, EMU_SHADER})->setFlags(HIDDEN);
+    }
 #ifdef __VITA__
     emu_grp.addOption({"WAIT_RENDERING", {"OFF", "ON"}, 1, EMU_WAIT_RENDERING});
 #endif
@@ -120,7 +124,7 @@ PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
     /*
      * Inputs options
      */
-    Group joy_grp("GAMEPAD", GrpId::GAMEPAD);
+    Group joy_grp("GAMEPAD", GAMEPAD);
     joy_grp.addOption({"JOY_UP", KEY_JOY_UP_DEFAULT, JOY_UP})->setFlags(INPUT);
     joy_grp.addOption({"JOY_DOWN", KEY_JOY_DOWN_DEFAULT, JOY_DOWN})->setFlags(INPUT);
     joy_grp.addOption({"JOY_LEFT", KEY_JOY_LEFT_DEFAULT, JOY_LEFT})->setFlags(INPUT);
@@ -150,7 +154,7 @@ PEMUConfig::PEMUConfig(c2d::Io *io, const std::string &name, int version)
     });
     addGroup(joy_grp);
 #ifndef NO_KEYBOARD
-    Group kb_grp("KEYBOARD", GrpId::KEYBOARD);
+    Group kb_grp("KEYBOARD", KEYBOARD);
     kb_grp.addOption({"KEY_UP", KEY_KB_UP_DEFAULT, KEY_UP})->setFlags(INPUT);
     kb_grp.addOption({"KEY_DOWN", KEY_KB_DOWN_DEFAULT, KEY_DOWN})->setFlags(INPUT);
     kb_grp.addOption({"KEY_LEFT", KEY_KB_LEFT_DEFAULT, KEY_LEFT})->setFlags(INPUT);
@@ -178,20 +182,20 @@ bool PEMUConfig::loadGame(const Game &game) {
     delete (p_game_config);
 
     // create game configuration
-    std::string path = p_io->getDataPath() + "configs/" + Utility::removeExt(game.path) + ".cfg";
+    std::string path = p_renderer->getIo()->getDataPath() + "configs/" + Utility::removeExt(game.path) + ".cfg";
     p_game_config = new Config(getName() + "_GAME", path, getAppVersion());
 
     // copy game emulation config section from main config for default options
-    getGroup(GrpId::EMULATION)->copy(&group);
+    getGroup(EMULATION)->copy(&group);
     p_game_config->addGroup(group);
 
     // copy game gamepad config from main config for default options
-    getGroup(GrpId::GAMEPAD)->copy(&group);
+    getGroup(GAMEPAD)->copy(&group);
     p_game_config->addGroup(group);
 
 #ifndef NO_KEYBOARD
     // copy game keyboard config from main config for default options
-    getGroup(GrpId::KEYBOARD)->copy(&group);
+    getGroup(KEYBOARD)->copy(&group);
     p_game_config->addGroup(group);
 #endif
 

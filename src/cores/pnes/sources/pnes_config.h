@@ -7,9 +7,9 @@
 
 #include "skeleton/pemu_config.h"
 
-class PNESConfig : public pemu::PEMUConfig {
+class PNESConfig final : public PEMUConfig {
 public:
-    PNESConfig(c2d::Io *io, int version);
+    PNESConfig(Renderer *renderer, int version);
 
     std::string getCoreVersion() override {
         return "Nestopia 1.52.0";

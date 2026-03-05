@@ -7,13 +7,11 @@
 #include "ui_main.h"
 
 #ifdef __SWITCH__
-UiMain::UiMain(c2d::Io *io, const c2d::Vector2f &size) : C2DRenderer({1280, 720}) {
+UiMain::UiMain(c2d::Io *io, const Vector2f &size) : C2DRenderer({1280, 720}) {
 #else
-
-UiMain::UiMain(c2d::Io *io, const c2d::Vector2f &size) : C2DRenderer(size) {
+UiMain::UiMain(const Vector2f &size) : C2DRenderer(size) {
 #endif
     printf("UiMain(%ix%i)\n", (int) UiMain::getSize().x, (int) UiMain::getSize().y);
-    UiMain::setIo(io);
 }
 
 void UiMain::init(UIRomList *romList, UiMenu *menu, UiEmu *emu, UiMenuState *state) {
@@ -90,11 +88,10 @@ void UiMain::onUpdate() {
 void UiMain::setConfig(PEMUConfig *cfg) {
     pConfig = cfg;
 
-    // add shaders, if any
-    auto shaderList = getShaderList();
-    if (shaderList) {
-        pConfig->get(PEMUConfig::OptId::EMU_SHADER)->setArray(shaderList->getNames(), 0);
-        pConfig->get(PEMUConfig::OptId::EMU_SHADER)->setFlags(0);
+    // set fullscreen if requested by config
+    const auto fs = pConfig->get(PEMUConfig::OptId::UI_FULLSCREEN);
+    if (fs && fs->getInteger()) {
+        setFullscreen(fs);
     }
 }
 

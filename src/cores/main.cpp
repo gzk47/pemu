@@ -14,19 +14,19 @@ int main(int argc, char **argv) {
     Game game;
 
     // custom io
-    auto io = new PEMUIo();
-
-    // load configuration
-    int pemu_version = (__PEMU_VERSION_MAJOR__ * 100) + __PEMU_VERSION_MINOR__;
-    auto cfg = new PEMUConfig(io, pemu_version);
+    const auto io = new PEMUIo();
 
     // create main ui/renderer
-    auto fs = cfg->get(PEMUConfig::OptId::UI_FULLSCREEN);
-    pemu_ui = new PEMUUiMain(io, (fs && !fs->getInteger()) ? Vector2f{1280, 720} : Vector2f{0, 0});
+    pemu_ui = new PEMUUiMain(Vector2f{1280, 720});
+    pemu_ui->setIo(io);
+
+    // load configuration
+    constexpr int version = (__PEMU_VERSION_MAJOR__ * 100) + __PEMU_VERSION_MINOR__;
+    const auto cfg = new PEMUConfig(pemu_ui, version);
     pemu_ui->setConfig(cfg);
 
     // load skin configuration
-    auto skin = new PEMUSkin(pemu_ui);
+    const auto skin = new PEMUSkin(pemu_ui);
     pemu_ui->setSkin(skin);
 
     // parse command line
@@ -45,17 +45,17 @@ int main(int argc, char **argv) {
     }
 
     // ui
-    auto romList = new PEMURomList(pemu_ui, cfg->getCoreVersion(), cfg->getCoreSupportedExt());
+    const auto romList = new PEMURomList(pemu_ui, cfg->getCoreVersion(), cfg->getCoreSupportedExt());
     if (game.path.empty()) {
         romList->build();
         romList->initFav();
     } else {
         delete (romList->rect);
     }
-    auto uiRomList = new PEMUUiRomList(pemu_ui, romList, pemu_ui->getSize());
-    auto uiMenu = new PEMUUiMenu(pemu_ui);
-    auto uiEmu = new PEMUUiEmu(pemu_ui);
-    auto uiState = new PEMUUiMenuState(pemu_ui);
+    const auto uiRomList = new PEMUUiRomList(pemu_ui, romList, pemu_ui->getSize());
+    const auto uiMenu = new PEMUUiMenu(pemu_ui);
+    const auto uiEmu = new PEMUUiEmu(pemu_ui);
+    const auto uiState = new PEMUUiMenuState(pemu_ui);
     pemu_ui->init(uiRomList, uiMenu, uiEmu, uiState);
 
     // load specified game from command line if requested
