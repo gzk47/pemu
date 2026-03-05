@@ -110,7 +110,7 @@ namespace pemu {
             ss_api::System system;
         };
 
-        PEMUConfig(c2d::Io *io, const std::string &name, int version = 1);
+        PEMUConfig(c2d::Renderer *renderer, const std::string &name, int version = 1);
 
         ~PEMUConfig() override;
 
@@ -144,8 +144,8 @@ namespace pemu {
         virtual std::vector<int> getCoreHiddenOptionToEnable() { return {}; }
 
     private:
-        c2d::config::Config *p_game_config = nullptr;
-        c2d::Io *p_io = nullptr;
+        Config *p_game_config = nullptr;
+        c2d::Renderer *p_renderer = nullptr;
     };
 }
 

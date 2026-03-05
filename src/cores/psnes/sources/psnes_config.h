@@ -8,10 +8,10 @@
 #include "skeleton/pemu_config.h"
 #include "snes9x.h"
 
-class PSNESConfig : public pemu::PEMUConfig {
+class PSNESConfig final : public PEMUConfig {
 
 public:
-    PSNESConfig(c2d::Io *io, int version);
+    PSNESConfig(Renderer *renderer, int version);
 
     std::string getCoreVersion() override {
         return "snes9x: " + std::string(VERSION);

@@ -9,14 +9,14 @@
 #include "pfbneo_utility.h"
 #include "burner.h"
 
-class PFBAConfig : public pemu::PEMUConfig {
+class PFBAConfig final : public PEMUConfig {
 public:
-    PFBAConfig(c2d::Io *io, int version);
+    PFBAConfig(Renderer *renderer, const int version);
 
     std::vector<int> getCoreHiddenOptionToEnable() override {
         return {
-                PEMUConfig::OptId::UI_FILTER_CLONES,
-                PEMUConfig::OptId::UI_FILTER_SYSTEM
+                UI_FILTER_CLONES,
+                UI_FILTER_SYSTEM
         };
     }
 

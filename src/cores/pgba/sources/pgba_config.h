@@ -10,12 +10,18 @@ extern "C" {
 #include "mgba/core/version.h"
 }
 
-class PGBAConfig : public pemu::PEMUConfig {
+class PGBAConfig final : public PEMUConfig {
 public:
-    PGBAConfig(c2d::Io *io, int version);
+    PGBAConfig(Renderer *renderer, int version);
 
     std::string getCoreVersion() override {
         return std::string(projectName) + projectVersion;
+    }
+
+    std::vector<int> getCoreHiddenOptionToEnable() override {
+        return {
+            UI_FILTER_SYSTEM
+        };
     }
 
     std::vector<std::string> getCoreSupportedExt() override {

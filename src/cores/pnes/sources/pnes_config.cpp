@@ -8,27 +8,29 @@
 using namespace c2d;
 using namespace pemu;
 
-PNESConfig::PNESConfig(c2d::Io *io, int version) : PEMUConfig(io, "PNES", version) {
+PNESConfig::PNESConfig(Renderer *renderer, const int version) : PEMUConfig(renderer, "PNES", version) {
     printf("PNESConfig(%s, v%i)\n", getPath().c_str(), version);
 
+    c2d::Io *io = renderer->getIo();
+
     // no need for auto-scaling mode on pnes
-    getOption(PEMUConfig::OptId::EMU_SCALING_MODE)->setArray({"ASPECT", "INTEGER"}, 0);
+    getOption(EMU_SCALING_MODE)->setArray({"ASPECT", "INTEGER"}, 0);
 
 #ifdef __SWITCH__
     // on nintendo switch invert A/B buttons
-    getOption(PEMUConfig::OptId::JOY_A)->setInteger(KEY_JOY_B_DEFAULT);
-    getOption(PEMUConfig::OptId::JOY_B)->setInteger(KEY_JOY_A_DEFAULT);
+    getOption(JOY_A)->setInteger(KEY_JOY_B_DEFAULT);
+    getOption(JOY_B)->setInteger(KEY_JOY_A_DEFAULT);
 #endif
 
     // "romlist.cpp" (RomList::build) will also reload config, but we need new roms paths
     PEMUConfig::load();
 
     // add custom rom path
-    PEMUConfig::addRomPath("NES", io->getDataPath() + "roms/", {3, 0, "NES"});
+    addRomPath("NES", io->getDataPath() + "roms/", {3, 0, "NES"});
     PEMUConfig::save();
 
     // create roms paths if needed
-    auto paths = getRomPaths();
+    const auto paths = getRomPaths();
     for (const auto &path: paths) {
         io->create(path.path);
     }

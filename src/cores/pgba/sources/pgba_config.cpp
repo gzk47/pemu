@@ -8,7 +8,9 @@
 using namespace c2d;
 using namespace pemu;
 
-PGBAConfig::PGBAConfig(c2d::Io *io, int version) : PEMUConfig(io, "PGBA", version) {
+PGBAConfig::PGBAConfig(Renderer *renderer, const int version) : PEMUConfig(renderer, "PGBA", version) {
+    c2d::Io *io = renderer->getIo();
+
     // no need for auto-scaling mode
     getOption(PEMUConfig::OptId::EMU_SCALING_MODE)->setArray({"ASPECT", "INTEGER"}, 0);
 

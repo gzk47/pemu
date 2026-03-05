@@ -12,7 +12,7 @@ namespace pemu {
     class UiMain : public c2d::C2DRenderer {
 
     public:
-        explicit UiMain(c2d::Io *io, const c2d::Vector2f &size = c2d::Vector2f(0, 0));
+        explicit UiMain(const c2d::Vector2f &size = c2d::Vector2f(0, 0));
 
         void init(UIRomList *romList, UiMenu *menu, UiEmu *emu, UiMenuState *state);
 

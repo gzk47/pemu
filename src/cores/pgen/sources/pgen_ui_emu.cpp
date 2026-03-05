@@ -178,7 +178,7 @@ void PGENUiEmu::onUpdate() {
         }
 #endif
         getAudio()->play(sound_buffer, samples,
-                         vdp_pal ? Audio::SyncMode::LowLatency : Audio::SyncMode::None);
+                         vdp_pal ? Audio::SyncMode::LowLatency : Audio::SyncMode::Safe);
     }
 
     return UiEmu::onUpdate();
