@@ -21,6 +21,7 @@ UIRomInfo::UIRomInfo(UiMain *u, UIRomList *uiRList, Font *fnt, int fntSize)
         Skin::TextGroup tg = main->getSkin()->getText({"MAIN", "ROM_SYNOPSIS", "TEXT"});
         if (tg.available) {
             synopsisWidth = tg.rect.width;
+            synopsisOverflow = tg.overflow;
         }
         synoBox->add(synoText);
         Rectangle::add(synoBox);
@@ -171,7 +172,15 @@ void UIRomInfo::load(const Game &game) {
         // 因此每游戏只计算一次；无 CJK 的文本原样返回，英文排版与改动前完全一致
         std::string synopsis = game.synopsis;
         if (synoText != nullptr) {
-            synopsis = pemu::wrapText(font, synoText->getCharacterSize(), synopsis, synopsisWidth);
+            if (pemu::hasCjkText(synopsis)) {
+                synopsis = pemu::wrapText(font, synoText->getCharacterSize(), synopsis, synopsisWidth);
+                // 中文简介整段没有空格，控件 NewLine 折行按空格分词后会把整段当成一个「词」，
+                // 这里改用 Clamp：控件不再按词预折行，只按 '\n' 换行，单行/多行起始基线一致。
+                synoText->setOverflow(Text::Clamp);
+            } else {
+                // 英文（wrapText 原样返回）：保持皮肤配置，逐行排版不变
+                synoText->setOverflow(synopsisOverflow);
+            }
         }
         showText(synoText, synopsis);
     }

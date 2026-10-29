@@ -36,6 +36,7 @@ public:
     c2d::RectangleShape *synoBox = nullptr;
     c2d::Text *synoText = nullptr;
     float synopsisWidth = 0; // 皮肤简介文本区宽度（ROM_SYNOPSIS TEXT rect.width），<=0 时不断行
+    c2d::Text::Overflow synopsisOverflow = c2d::Text::NewLine; // 皮肤原始 overflow，英文/未折行时恢复用
     //
     c2d::RectangleShape *previewBox = nullptr;
     //

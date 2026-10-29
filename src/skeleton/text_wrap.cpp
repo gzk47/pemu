@@ -162,20 +162,22 @@ struct WrapToken {
 
 } // namespace
 
+bool hasCjkText(const std::string &src) {
+    for (size_t i = 0; i < src.size();) {
+        if (isCjkCodepoint(decodeCodepoint(src, i))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::string wrapText(Font *font, unsigned int charSize, const std::string &src, float maxWidth) {
     if (font == nullptr || maxWidth <= 0 || src.empty()) {
         return src;
     }
 
     // 快路径：不含 CJK 的文本原样返回——英文排版完全交给控件原生按词折行，零变化
-    bool hasCjk = false;
-    for (size_t i = 0; i < src.size();) {
-        if (isCjkCodepoint(decodeCodepoint(src, i))) {
-            hasCjk = true;
-            break;
-        }
-    }
-    if (!hasCjk) {
+    if (!hasCjkText(src)) {
         return src;
     }
 

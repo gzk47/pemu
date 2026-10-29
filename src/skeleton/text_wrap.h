@@ -9,6 +9,9 @@
 
 namespace pemu {
 
+// 不能让控件再按空格分词折行（详见 ui_romlist_rominfo.cpp 中的说明）。
+bool hasCjkText(const std::string &src);
+
 // 按 UTF-8 码点边界折行（复用 c2d::Text 的度量与排版语义）：
 // - 不含 CJK 的文本原样返回，英文排版完全交给控件原生按词折行，零变化
 // - CJK 逐字可断；英文/数字/符号连续串视为整体单词不拆
