@@ -1,0 +1,76 @@
+name: Build
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Add safe.directory Update libnx
+        run: |
+          git config --global --add safe.directory "*"
+          # git clone --recurse-submodules https://github.com/switchbrew/libnx.git
+          # cd libnx
+          # make -j$(nproc) install
+
+      - name: Checkout latest code
+        uses: actions/checkout@v7
+        with:
+          clean: true
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: recursive
+
+      - name: Extract version
+        run: |
+          APP_NAME="PEMU-Switch"
+          VER_FILE="CMakeLists.txt"
+          KEY="VERSION_"
+          
+          VERSION="$(grep -F "$KEY" "$VER_FILE" | grep -oE '[0-9]+' | head -3 | paste -s -d '.')"
+          SHORT_HASH="$(git rev-parse --short=7 HEAD)"
+          
+          echo "TAG_NAME=v${VERSION}-${SHORT_HASH}" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=${APP_NAME} v${VERSION} (${SHORT_HASH})" >> "$GITHUB_ENV"
+
+      - name: Install build dependencies
+        run: |
+          apt -yq update
+          apt -yq install git build-essential cmake zip
+
+      - name: Configure CMake
+        run: |
+          mkdir cmake-build && cd cmake-build
+          cmake -G "Unix Makefiles" -DPLATFORM_SWITCH=ON -DCMAKE_BUILD_TYPE=Release ..
+
+      - name: Build
+        continue-on-error: true
+        run: |
+          cd cmake-build
+          make -j$(nproc) pfbneo.deps
+          make -j$(nproc) pfbneo.nro
+          make -j$(nproc) pgen.nro
+          make -j$(nproc) pnes.nro
+          make -j$(nproc) psnes.nro
+          make -j$(nproc) pgba.nro
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: ${{ env.RELEASE_NAME }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          make_latest: true
+          files: |
+            cmake-build/src/cores/pfbneo/pfbneo.nro
+            cmake-build/src/cores/pgen/pgen.nro
+            cmake-build/src/cores/pnes/pnes.nro
+            cmake-build/src/cores/psnes/psnes.nro
+            cmake-build/src/cores/pgba/pgba.nro
