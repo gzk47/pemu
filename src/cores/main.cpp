@@ -4,12 +4,25 @@
 
 #include "main.h"
 
+#ifdef __SWITCH__
+#include <switch/services/applet.h>
+#endif
+
 using namespace c2d;
 using namespace pemu;
 
 PEMUUiMain *pemu_ui;
 
 int main(int argc, char **argv) {
+
+#if defined(__SWITCH__)
+    AppletType at = appletGetAppletType();
+    if (at == AppletType_LibraryApplet)
+    {
+        return -1;
+    }
+#endif
+
     // command line game info
     Game game;
 

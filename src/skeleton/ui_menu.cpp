@@ -38,16 +38,18 @@ public:
     }
 
     void refresh() {
-        set(p_name->getString(), p_option);
+        set(p_key, p_option);
     }
 
     void set(const std::string &name, Option *option) {
+        // name 必须是未翻译的原始键：它既用于 STATES/QUIT 判断，也是 refresh() 的依据
         p_option = option;
+        p_key = name;
 
         // reset
         setVisibility(Visibility::Visible);
         p_sprite->setVisibility(Visibility::Hidden);
-        p_name->setString(name);
+        p_name->setString(pemu::tr(name));
         p_value->setVisibility(Visibility::Visible);
         setFillColor(Color::Transparent);
 
@@ -56,7 +58,7 @@ public:
             // custom options
             if (name == "STATES" || name == "QUIT") {
                 p_value->setVisibility(Visibility::Visible);
-                p_value->setString("GO");
+                p_value->setString(pemu::tr("GO"));
                 return;
             }
             p_value->setVisibility(Visibility::Hidden);
@@ -91,7 +93,7 @@ public:
             }
         } else {
             p_value->setVisibility(Visibility::Visible);
-            p_value->setString(option->getString());
+            p_value->setString(pemu::trValue(option->getString()));
         }
     }
 
@@ -100,6 +102,7 @@ public:
     Text *p_value = nullptr;
     Sprite *p_sprite = nullptr;
     Option *p_option = nullptr;
+    std::string p_key;
     Skin::TextGroup m_textGroup;
 };
 
@@ -157,7 +160,7 @@ void UiMenu::load(bool isGame) {
         bool useZipName = ui->getConfig()->getOption(PEMUConfig::OptId::UI_SHOW_ZIP_NAMES)->getInteger();
         title->setString(useZipName ? Utility::removeExt(game.path) : game.name);
     } else {
-        title->setString("MAIN OPTIONS");
+        title->setString(pemu::tr("MAIN OPTIONS"));
     }
 
     // set options items
@@ -293,7 +296,7 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
             option->setArrayMoveNext();
         }
         if (!option->getComment().empty()) {
-            ui->getUiStatusBox()->show(option->getComment());
+            ui->getUiStatusBox()->show(pemu::tr(option->getComment()));
         }
 
         switch (option->getId()) {
@@ -308,10 +311,10 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
             case PEMUConfig::OptId::UI_FILTER_RATING:
             case PEMUConfig::OptId::UI_FILTER_DATE:
             case PEMUConfig::OptId::UI_FILTER_GENRE: {
-                std::string name = Utility::toUpper(option->getName());
-                std::string value = Utility::toUpper(option->getString());
+                std::string name = pemu::tr(Utility::toUpper(option->getName()));
+                std::string value = pemu::trValue(Utility::toUpper(option->getString()));
                 if (option->getComment().empty()) {
-                    ui->getUiStatusBox()->show("%s: %s", name.c_str(), value.c_str());
+                    ui->getUiStatusBox()->show("%s：%s", name.c_str(), value.c_str());
                 }
                 ui->getUiRomList()->updateRomList();
                 break;
@@ -332,19 +335,19 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
                     float oh = gh * ui->getUiEmu()->getVideo()->getScale().y;
                     float ratio = std::max(ow / oh, oh / ow);
                     ui->getUiStatusBox()->show(
-                            "GAME: %ix%i - RATIO: %.2f | OUTPUT: %ix%i - RATIO: %.2f - SCALING: %.2fx%.2f",
+                            pemu::tr("GAME: %ix%i - RATIO: %.2f | OUTPUT: %ix%i - RATIO: %.2f - SCALING: %.2fx%.2f").c_str(),
                             (int) gw, (int) gh, gr, (int) ow, (int) oh, ratio,
                             ui->getUiEmu()->getVideo()->getScale().x, ui->getUiEmu()->getVideo()->getScale().y);
                 }
                 break;
             case PEMUConfig::OptId::EMU_SCALING_MODE:
                 if (option->getString() == "AUTO") {
-                    ui->getUiStatusBox()->show("TRY TO KEEP INTEGER SCALING IF ASPECT RATIO IS NOT TOO DIVERGENT");
+                    ui->getUiStatusBox()->show(pemu::tr("TRY TO KEEP INTEGER SCALING IF ASPECT RATIO IS NOT TOO DIVERGENT"));
                 } else if (option->getString() == "ASPECT") {
-                    ui->getUiStatusBox()->show("KEEP GAME ASPECT RATIO - SOME SHADERS MAY NOT RENDER CORRECTLY");
+                    ui->getUiStatusBox()->show(pemu::tr("KEEP GAME ASPECT RATIO - SOME SHADERS MAY NOT RENDER CORRECTLY"));
                 } else {
                     ui->getUiStatusBox()->show(
-                            "FORCE INTEGER SCALING - ASPECT RATIO MAY BE WRONG BUT SHADERS WILL RENDER CORRECTLY");
+                            pemu::tr("FORCE INTEGER SCALING - ASPECT RATIO MAY BE WRONG BUT SHADERS WILL RENDER CORRECTLY"));
                 }
                 if (isEmuRunning) {
                     ui->getUiEmu()->getVideo()->updateScaling();
@@ -385,16 +388,17 @@ bool UiMenu::onInput(c2d::Input::Player *players) {
         auto option = lines.at(highlightIndex)->p_option;
         if (option && option->getFlags() == PEMUConfig::Flags::INPUT) {
             int new_key = 0;
-            int res = ui->getUiMessageBox()->show("NEW INPUT", "PRESS A BUTTON", "", "", &new_key, 9);
+            int res = ui->getUiMessageBox()->show(
+                    pemu::tr("NEW INPUT"), pemu::tr("PRESS A BUTTON"), "", "", &new_key, 9);
             if (res != MessageBox::TIMEOUT) {
                 needSave = true;
                 option->setInteger(new_key);
                 lines.at(highlightIndex)->refresh();
             }
-        } else if (lines.at(highlightIndex)->p_name->getString() == "STATES") {
+        } else if (lines.at(highlightIndex)->p_key == "STATES") {
             setVisibility(Visibility::Hidden, true);
             ui->getUiStateMenu()->setVisibility(Visibility::Visible, true);
-        } else if (lines.at(highlightIndex)->p_name->getString() == "QUIT") {
+        } else if (lines.at(highlightIndex)->p_key == "QUIT") {
             if (isEmuRunning) {
                 setVisibility(Visibility::Hidden, true);
                 ui->getUiEmu()->stop();

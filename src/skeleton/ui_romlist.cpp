@@ -143,7 +143,8 @@ void UIRomList::updateRomList() {
     std::string sys = pMain->getConfig()->get(PEMUConfig::OptId::UI_FILTER_SYSTEM)->getString();
     int systemId = sys == "ALL" ? -1 : pRomList->gameList->systemList.findByName(sys).id;
     if (mShowSystemText && pTitleText) {
-        pTitleText->setString(sys + " - " +
+        std::string sysName = sys == "ALL" ? pemu::trValue("ALL") : sys;
+        pTitleText->setString(sysName + " - " +
                               std::to_string(mGameList.getAvailableCount()) + "/" +
                               std::to_string(pRomList->gameList->getCount(systemId)));
     } else if (pTitleText) {
@@ -266,13 +267,13 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
         Game game = getSelection();
         if (game.id > 0 && !pRomList->gameListFav->exist(game.id)) {
             int res = pMain->getUiMessageBox()->show(
-                    "FAVORITES", "Add to favorites ?", "OK", "CANCEL");
+                    pemu::tr("FAVORITES"), pemu::tr("Add to favorites ?"), pemu::tr("OK"), pemu::tr("CANCEL"));
             if (res == MessageBox::LEFT) {
                 pRomList->addFav(game);
             }
         } else if (game.id > 0 && pRomList->gameListFav->exist(game.id)) {
             int res = pMain->getUiMessageBox()->show(
-                    "FAVORITES", "Remove from favorites ?", "OK", "CANCEL");
+                    pemu::tr("FAVORITES"), pemu::tr("Remove from favorites ?"), pemu::tr("OK"), pemu::tr("CANCEL"));
             if (res == MessageBox::LEFT) {
                 pRomList->removeFav(game);
                 if (pMain->getConfig()->get(PEMUConfig::OptId::UI_FILTER_FAVORITES)->getInteger()) {

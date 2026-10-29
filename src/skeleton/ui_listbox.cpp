@@ -8,6 +8,63 @@ using namespace c2d;
 using namespace pemu;
 using namespace ss_api;
 
+// 按像素宽度截断列表项：超出时保留可容纳的前缀并加「…」，只在 UTF-8 字符边界切割
+static size_t utf8CharCount(const std::string &str) {
+    size_t count = 0;
+    for (size_t i = 0; i < str.size(); i++) {
+        if (((unsigned char) str[i] & 0xC0) != 0x80) {
+            count++;
+        }
+    }
+    return count;
+}
+
+static std::string utf8Prefix(const std::string &str, size_t chars) {
+    size_t count = 0;
+    for (size_t i = 0; i < str.size(); i++) {
+        if (((unsigned char) str[i] & 0xC0) != 0x80) {
+            if (count == chars) {
+                return str.substr(0, i);
+            }
+            count++;
+        }
+    }
+    return str;
+}
+
+static float textWidthFrom(Text *text, size_t chars) {
+    return text->findCharacterPos(chars).x - text->findCharacterPos(0).x;
+}
+
+static std::string fitTextWidth(Text *text, const std::string &str, float maxWidth) {
+    if (maxWidth <= 0) {
+        return str;
+    }
+
+    text->setString(str);
+    size_t count = utf8CharCount(str);
+    if (textWidthFrom(text, count) <= maxWidth) {
+        return str;
+    }
+
+    text->setString("…");
+    float ellipsisWidth = textWidthFrom(text, 1);
+
+    size_t lo = 0;
+    size_t hi = count;
+    while (lo < hi) {
+        size_t mid = (lo + hi + 1) / 2;
+        text->setString(utf8Prefix(str, mid));
+        if (textWidthFrom(text, mid) + ellipsisWidth <= maxWidth) {
+            lo = mid;
+        } else {
+            hi = mid - 1;
+        }
+    }
+
+    return utf8Prefix(str, lo) + "…";
+}
+
 UIListBoxLine::UIListBoxLine(
         const FloatRect &rect, const std::string &str,
         Font *font, unsigned int fontSize, const c2d::Vector2f &scaling, Texture *i, bool use_ic) : RectangleShape(
@@ -31,10 +88,12 @@ UIListBoxLine::UIListBoxLine(
         // icon added in ListBox::setSelection (setIcon)
         // set text
         text->setPosition(iconRect->getSize().x + 8, UIListBoxLine::getSize().y / 2);
-        text->setSizeMax(UIListBoxLine::getSize().x - (float) fontSize - iconRect->getSize().x, 0);
+        maxWidth = UIListBoxLine::getSize().x - (float) fontSize - iconRect->getSize().x;
+        text->setSizeMax(maxWidth, 0);
     } else {
         text->setPosition(2 * scaling.x, UIListBoxLine::getSize().y / 2);
-        text->setSizeMax(UIListBoxLine::getSize().x - text->getSize().x - (2 * scaling.x) - 2, 0);
+        maxWidth = UIListBoxLine::getSize().x - text->getSize().x - (2 * scaling.x) - 2;
+        text->setSizeMax(maxWidth, 0);
     }
 
     UIListBoxLine::add(text);
@@ -46,11 +105,12 @@ void UIListBoxLine::setSize(const Vector2f &size) {
 
 void UIListBoxLine::setSize(float width, float height) {
     RectangleShape::setSize(width, height);
-    text->setSizeMax(getSize().x - 8, 0);
+    maxWidth = getSize().x - 8;
+    text->setSizeMax(maxWidth, 0);
 }
 
 void UIListBoxLine::setString(const std::string &string) {
-    text->setString(string);
+    text->setString(fitTextWidth(text, string, maxWidth));
 }
 
 void UIListBoxLine::setColor(const Color &color) {

@@ -5,7 +5,9 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <cstdio>
 #include "pemu.h"
+#include "encoding.h"
 
 RomList::RomList(UiMain *_ui, const std::string &emuVersion, const std::vector<std::string> &_filters) {
     printf("RomList()\n");
@@ -62,15 +64,22 @@ void RomList::build(const ss_api::GameList::GameAddedCb &cb) {
     auto romPaths = cfg->getRomPaths();
     for (const auto &p: romPaths) {
         std::string gameListPath = p.path + "gamelist.xml";
-        gameList->append(gameListPath, p.path, false, filters, p.system, false, [this](Game *game) {
+        // GBK gamelist：不是合法 UTF-8 时先生成 UTF-8 临时副本，交给解析器后再删除
+        std::string tmpGameListPath = ui->getIo()->getDataPath() + "gamelist_utf8.tmp.xml";
+        std::string utf8Copy = pemu::encoding::createUtf8CopyIfNeeded(gameListPath, tmpGameListPath);
+        std::string parsePath = utf8Copy.empty() ? gameListPath : utf8Copy;
+        gameList->append(parsePath, p.path, false, filters, p.system, false, [this](Game *game) {
             if (p_cb) p_cb(game);
             m_games_count++;
             if (game->available) m_games_available_count++;
             if (!(m_games_count % 200)) {
-                setLoadingText("Games: %li / %li", m_games_available_count, m_games_count);
+                setLoadingText(pemu::tr("Games: %li / %li").c_str(), m_games_available_count, m_games_count);
             }
         });
-        setLoadingText("Games: %li / %li", m_games_available_count, m_games_count);
+        if (!utf8Copy.empty()) {
+            ::remove(utf8Copy.c_str());
+        }
+        setLoadingText(pemu::tr("Games: %li / %li").c_str(), m_games_available_count, m_games_count);
         printf("RomList::build: %s, games found: %zu / %zu (system: %s (0x%08x))\n",
                gameListPath.c_str(), gameList->getAvailableCount(),
                gameList->games.size(), p.system.name.c_str(), p.system.id);

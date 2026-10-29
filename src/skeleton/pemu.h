@@ -19,6 +19,8 @@
 #include "skin.h"
 #include "ui_video.h"
 #include "pemu_config.h"
+#include "ui_lang.h"
+#include "text_wrap.h"
 
 #include "skin/SkinnedRectangle.h"
 #include "skin/SkinnedText.h"

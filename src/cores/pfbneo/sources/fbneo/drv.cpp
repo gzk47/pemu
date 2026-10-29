@@ -83,7 +83,7 @@ static int DrvLoadRom(unsigned char *Dest, int *pnWrote, int i) {
         sprintf(szText, "Error loading %s for %s.\nEmulation will likely have problems.",
                 pszFilename, BurnDrvGetTextA(DRV_NAME));
         printf("DrvLoadRom: %s\n", szText);
-        pemu_ui->getUiMessageBox()->show("ERROR", szText, "OK");
+        pemu_ui->getUiMessageBox()->show(pemu::tr("ERROR"), szText, pemu::tr("OK"));
     }
 
     BzipClose();
@@ -170,7 +170,7 @@ int ProgressUpdateBurner(double dProgress, const TCHAR *pszText, bool bAbs) {
         pemu_ui->getUiProgressBox()->setMessage(pszText);
         pemu_ui->getUiProgressBox()->setProgress((float) nProgressPosBurn);
     } else {
-        pemu_ui->getUiProgressBox()->setMessage("Please wait...");
+        pemu_ui->getUiProgressBox()->setMessage(pemu::tr("Please wait..."));
     }
 
     pemu_ui->flip();

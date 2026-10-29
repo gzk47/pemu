@@ -18,8 +18,9 @@ public:
         outlineColorSelected = ui->getSkin()->getRectangleShape({"STATES_MENU"}).outlineColor;
 
         // text if no save/screenshot
-        middle_text = new C2DText("NO SAVE", 26, ui->getSkin()->getFont());
+        middle_text = new C2DText(pemu::tr("NO SAVE"), 26, ui->getSkin()->getFont());
         ui->getSkin()->loadText(middle_text, {"STATES_MENU", "STATES_ITEM", "STATES_TEXT"});
+        middle_text->setString(pemu::tr("NO SAVE"));
         middle_text->setOrigin(Origin::Center);
         middle_text->setPosition(UiState::getLocalBounds().left + UiState::getSize().x / 2,
                                  UiState::getLocalBounds().top + UiState::getSize().y / 2);
@@ -27,7 +28,7 @@ public:
 
         // text for slot id
         char bottom_text_char[32];
-        snprintf(bottom_text_char, 32, "SLOT %i", id);
+        snprintf(bottom_text_char, 32, pemu::tr("SLOT %i").c_str(), id);
         bottom_text = new C2DText(bottom_text_char, 26, ui->getSkin()->getFont());
         ui->getSkin()->loadText(bottom_text, {"STATES_MENU", "STATES_ITEM", "STATES_TEXT"});
         bottom_text->setString(bottom_text_char);
@@ -59,12 +60,12 @@ public:
                 }
             }
             if (!texture || !texture->available) {
-                middle_text->setString("NO PIC");
+                middle_text->setString(pemu::tr("NO PIC"));
                 middle_text->setOrigin(Origin::Center);
                 middle_text->setVisibility(Visibility::Visible);
             }
         } else {
-            middle_text->setString("NO SAVE");
+            middle_text->setString(pemu::tr("NO SAVE"));
             middle_text->setOrigin(Origin::Center);
             middle_text->setVisibility(Visibility::Visible);
         }
@@ -229,7 +230,7 @@ bool UiMenuState::onInput(c2d::Input::Player *players) {
             if (state->exist) {
                 int res = ui->getUiMessageBox()->show(
                         state->bottom_text->getString(),
-                        "PRESS FIRE2 TO CANCEL", "LOAD", "SAVE");
+                        pemu::tr("PRESS FIRE2 TO CANCEL"), pemu::tr("LOAD"), pemu::tr("SAVE"));
                 if (res == MessageBox::LEFT) {
                     state->loadState();
                     setVisibility(Visibility::Hidden);

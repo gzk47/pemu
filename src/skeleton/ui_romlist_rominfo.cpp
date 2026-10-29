@@ -17,6 +17,11 @@ UIRomInfo::UIRomInfo(UiMain *u, UIRomList *uiRList, Font *fnt, int fntSize)
     if (main->getSkin()->loadRectangleShape(synoBox, {"MAIN", "ROM_SYNOPSIS"})) {
         synoText = new Text("", (unsigned int) fontSize, font);
         main->getSkin()->loadText(synoText, {"MAIN", "ROM_SYNOPSIS", "TEXT"});
+        // 记录皮肤为简介文本配置的可用宽度（与 loadText 内 setSizeMax 的宽度同源同值），供断行使用
+        Skin::TextGroup tg = main->getSkin()->getText({"MAIN", "ROM_SYNOPSIS", "TEXT"});
+        if (tg.available) {
+            synopsisWidth = tg.rect.width;
+        }
         synoBox->add(synoText);
         Rectangle::add(synoBox);
     } else {
@@ -153,16 +158,22 @@ void UIRomInfo::load(const Game &game) {
         printf("UIRomInfo::load(%s)\n", game.name.c_str());
         // load title/preview texture
         loadTexture(game);
-        showText(systemText, "System: " + game.system.name);
-        showText(developerText, "Developer: " + game.developer.name);
-        showText(editorText, "Editor: " + game.editor.name);
-        showText(dateText, "Date: " + game.date);
-        showText(genreText, "Genre: " + game.genre.name);
-        showText(playersText, "Players: " + game.players);
-        showText(ratingText, "Rating: " + std::to_string(game.rating));
-        showText(cloneofText, "Clone Of: " + (game.cloneOf.empty() ? "NONE" : game.cloneOf));
-        showText(filenameText, "File: " + game.path);
-        showText(synoText, game.synopsis);
+        showText(systemText, pemu::tr("System: ") + game.system.name);
+        showText(developerText, pemu::tr("Developer: ") + game.developer.name);
+        showText(editorText, pemu::tr("Editor: ") + game.editor.name);
+        showText(dateText, pemu::tr("Date: ") + game.date);
+        showText(genreText, pemu::tr("Genre: ") + game.genre.name);
+        showText(playersText, pemu::tr("Players: ") + game.players);
+        showText(ratingText, pemu::tr("Rating: ") + std::to_string(game.rating));
+        showText(cloneofText, pemu::tr("Clone Of: ") + (game.cloneOf.empty() ? pemu::tr("NONE") : game.cloneOf));
+        showText(filenameText, pemu::tr("File: ") + game.path);
+        // 中文断行：真正的简介只在光标停下后加载一次（见 UIRomList 的 mTimerLoadInfo），
+        // 因此每游戏只计算一次；无 CJK 的文本原样返回，英文排版与改动前完全一致
+        std::string synopsis = game.synopsis;
+        if (synoText != nullptr) {
+            synopsis = pemu::wrapText(font, synoText->getCharacterSize(), synopsis, synopsisWidth);
+        }
+        showText(synoText, synopsis);
     }
 }
 

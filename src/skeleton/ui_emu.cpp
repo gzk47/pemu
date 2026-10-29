@@ -14,7 +14,7 @@ UiEmu::UiEmu(UiMain *u) : RectangleShape(u->getSize()) {
     fpsText->setFillColor(Color::Yellow);
     fpsText->setOutlineColor(Color::Black);
     fpsText->setOutlineThickness(1);
-    fpsText->setString("FPS: 00/60");
+    fpsText->setString(pemu::tr("FPS: 00/60"));
     fpsText->setPosition(16, 16);
     fpsText->setVisibility(Visibility::Hidden);
     RectangleShape::add(fpsText);
@@ -50,7 +50,7 @@ void UiEmu::addVideo(uint8_t **pixels, int *pitch,
 int UiEmu::load(const Game &game) {
     printf("UiEmu::load: name: %s, path: %s\n",
            game.path.c_str(), game.romsPath.c_str());
-    pMain->getUiStatusBox()->show("TIPS: PRESS MENU1 + MENU2 BUTTONS FOR IN GAME MENU...");
+    pMain->getUiStatusBox()->show(pemu::tr("TIPS: PRESS MENU1 + MENU2 BUTTONS FOR IN GAME MENU..."));
     currentGame = game;
 
     // set fps text on top
@@ -154,7 +154,8 @@ void UiEmu::onUpdate() {
             if (!fpsText->isVisible()) {
                 fpsText->setVisibility(c2d::Visibility::Visible);
             }
-            sprintf(fpsString, "FPS: %.1f/%.1f", pMain->getFps(), targetFps);
+            snprintf(fpsString, sizeof(fpsString), pemu::tr("FPS: %.1f/%.1f").c_str(),
+                     pMain->getFps(), targetFps);
             fpsText->setString(fpsString);
         } else {
             if (fpsText->isVisible()) {

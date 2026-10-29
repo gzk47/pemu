@@ -12,7 +12,7 @@ UiStatusBox::UiStatusBox(UiMain *m)
     SkinnedRectangle::setCornersRadius(8);
     SkinnedRectangle::setCornerPointCount(8);
 
-    text = new Text("TIPS:", (int) (getSize().y * 0.65f), main->getSkin()->getFont());
+    text = new Text(pemu::tr("TIPS:"), (int) (getSize().y * 0.65f), main->getSkin()->getFont());
     text->setOutlineThickness(1.0f);
     text->setOrigin(Origin::Left);
     text->setPosition(6 * main->getScaling().x, getSize().y / 2);
