@@ -2,8 +2,11 @@
 // Created by cpasjuste on 22/11/16.
 //
 #include <algorithm>
+#include <utility>
+#include <vector>
 #include "pemu.h"
 #include "ss_api.h"
+#include "sort_key.h"
 
 using namespace c2d;
 using namespace c2d::config;
@@ -191,7 +194,37 @@ void UIRomList::filterRomList() {
 
 void UIRomList::sortRomList() {
     bool byZipName = pMain->getConfig()->get(PEMUConfig::OptId::UI_SHOW_ZIP_NAMES)->getInteger();
-    mGameList.sortAlpha(byZipName);
+
+    // 按 ROM 文件名排序：保持 sscrap 原有行为不变
+    if (byZipName) {
+        mGameList.sortAlpha(true);
+        return;
+    }
+
+    // 按显示名排序：数字 < 英文 < 中文（拼音首字母）。
+    // 键只算一次，再用稳定排序保证相同键（同名多版本）保持 gamelist 原顺序。
+    auto &games = mGameList.games;
+    if (games.size() < 2) {
+        return;
+    }
+
+    std::vector<std::string> keys;
+    keys.reserve(games.size());
+    std::vector<size_t> order(games.size());
+    for (size_t i = 0; i < games.size(); i++) {
+        keys.emplace_back(pemu::makeSortKey(games[i].name));
+        order[i] = i;
+    }
+    std::stable_sort(order.begin(), order.end(), [&keys](size_t a, size_t b) {
+        return keys[a] < keys[b];
+    });
+
+    std::vector<ss_api::Game> sorted;
+    sorted.reserve(games.size());
+    for (auto i: order) {
+        sorted.emplace_back(std::move(games[i]));
+    }
+    games = std::move(sorted);
 }
 
 void UIRomList::setVideoSnapDelay(int delay) {
