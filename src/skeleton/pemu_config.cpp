@@ -212,7 +212,17 @@ bool PEMUConfig::saveGame() {
 bool PEMUConfig::addRomPath(const std::string &name, const std::string &path, const ss_api::System &system) {
     printf("PEMUConfig::addRomPath: %s (system: %s, path: %s)\n",
            name.c_str(), system.name.c_str(), path.c_str());
-    auto roms = config_lookup(libConfigGetInstance(), std::string(getName() + ".ROMS").c_str());
+
+    // 首启时 ROMS 组可能还不存在：先按点路径直查，查不到再逐层补建。
+    config_setting_t *roms = config_lookup(libConfigGetInstance(), std::string(getName() + ".ROMS").c_str());
+    if (!roms) {
+        config_setting_t *root = config_root_setting(libConfigGetInstance());
+        config_setting_t *section = Config::libConfigGetOrAdd(root, getName(), CONFIG_TYPE_GROUP);
+        if (section) {
+            roms = Config::libConfigGetOrAdd(section, "ROMS", CONFIG_TYPE_GROUP);
+        }
+    }
+
     if (roms && config_setting_get_member(roms, name.c_str())) {
         printf("PEMUConfig::addRomPath: %s found in config file, skipping\n", name.c_str());
         return false;
