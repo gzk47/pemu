@@ -21,14 +21,12 @@ void PFBNRomList::build(const ss_api::GameList::GameAddedCb &cb) {
                game->path.c_str(), game->romsPath.c_str(),
                gameInfo.system.c_str(), gameInfo.systemId, cfgSys.name.c_str(), cfgSys.id);
 #endif
-        // 仅当 gamelist 没有提供有效名字时才用 fbneo 驱动名覆盖：
-        if (!gameInfo.name.empty()) {
-            std::string fileName = c2d::Utility::removeExt(game->path);
-            if (game->name.empty()
-                || c2d::Utility::toUpper(game->name) == c2d::Utility::toUpper(fileName)) {
-                game->name = gameInfo.name;
-            }
-        }
+        // 游戏列表按gamelist.xml进行显示
+        // 原代码保留备查：
+        // replace gamelist.xml name with fbneo name
+        // if (!gameInfo.name.empty()) {
+            // game->name = gameInfo.name;
+        // }
 
         // replace editor/developer
         if ((game->editor.name.empty() || game->editor.name == "UNKNOWN")

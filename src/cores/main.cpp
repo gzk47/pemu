@@ -15,11 +15,11 @@ PEMUUiMain *pemu_ui;
 
 int main(int argc, char **argv) {
 
-#if defined(__SWITCH__)
+#ifdef __SWITCH__
     AppletType at = appletGetAppletType();
     if (at == AppletType_LibraryApplet)
     {
-        return -1;
+        return 1;
     }
 #endif
 
