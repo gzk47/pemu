@@ -34,7 +34,6 @@ namespace pemu {
         RectangleShape *iconRect = nullptr;
         c2d::Texture *icon = nullptr;
         c2d::Text *text = nullptr;
-        float maxWidth = 0;
         bool use_icons = false;
     };
 
