@@ -3,6 +3,7 @@
 //
 
 #include "pemu.h"
+#include "text_wrap.h"
 
 UIRomInfo::UIRomInfo(UiMain *u, UIRomList *uiRList, Font *fnt, int fntSize)
         : Rectangle(u->getSize()) {
