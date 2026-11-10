@@ -264,6 +264,10 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
     }
 
     unsigned int buttons = players[0].buttons;
+    // 简介翻页用 LB/RB（LT/RT 已用于系统筛选）：与上帧比较做边沿检测，按住只翻一页
+    bool lbPressed = (buttons & Input::Button::LB) && !(mPrevButtons & Input::Button::LB);
+    bool rbPressed = (buttons & Input::Button::RB) && !(mPrevButtons & Input::Button::RB);
+    mPrevButtons = buttons;
     if (buttons & Input::Button::Up) {
         pListBox->up();
         pRomInfo->load();
@@ -284,6 +288,12 @@ bool UIRomList::onInput(c2d::Input::Player *players) {
         pRomInfo->load();
         mTimerLoadInfoDone = 0;
         mTimerLoadVideoDone = 0;
+    } else if (lbPressed) {
+        // 简介上翻一页（LB）：仅在边沿触发，不可翻页时无操作
+        pRomInfo->pageUp();
+    } else if (rbPressed) {
+        // 简介下翻一页（RB）：仅在边沿触发，不可翻页时无操作
+        pRomInfo->pageDown();
     } else if (buttons & Input::Button::A) {
         Game game = getSelection();
         if (game.available) {
@@ -366,6 +376,9 @@ void UIRomList::onUpdate() {
             mTimerLoadVideoDone = 1;
         }
     }
+
+    // 跑马灯：只有当前高亮行的游戏名超宽时才滚动，其余行保持静态截断
+    pListBox->updateMarquee();
 
     RectangleShape::onUpdate();
 }

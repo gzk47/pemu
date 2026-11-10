@@ -55,6 +55,7 @@ namespace pemu {
         SkinnedText *pTitleText = nullptr;
         ss_api::GameList mGameList;
         bool mShowSystemText = false;
+        unsigned int mPrevButtons = 0; // 上帧按键状态：简介翻页(LB/RB)用它做边沿检测，按住不连翻
 
         c2d::C2DClock mTimerLoadInfo;
 #ifdef __3DS__

@@ -152,6 +152,11 @@ void UIRomInfo::load(const Game &game) {
         hideText(cloneofText);
         hideText(filenameText);
         hideText(synoText);
+        // 隐藏状态下清空翻页状态，避免残留上一游戏的页号
+        synopsisLines.clear();
+        synopsisLinesPerPage = 1;
+        synopsisPage = 0;
+        synopsisPaged = false;
 #if __MPV__
         mpvTexture->setVisibility(Visibility::Hidden, true);
         mpv->stop();
@@ -176,6 +181,8 @@ void UIRomInfo::load(const Game &game) {
             if (pemu::hasCjkText(synopsis)) {
                 synopsis = pemu::wrapText(font, synoText->getCharacterSize(), synopsis, synopsisWidth);
                 // 中文简介整段没有空格，控件 NewLine 折行按空格分词后会把整段当成一个「词」，
+                // 该「词」累计宽度必然超过文本框宽度，于是首行之前多换一行（=首行上方空一行）；
+                // 单行时整段宽度不超限，所以不出现。断点已由 wrapText 按宽度插好，
                 // 这里改用 Clamp：控件不再按词预折行，只按 '\n' 换行，单行/多行起始基线一致。
                 synoText->setOverflow(Text::Clamp);
             } else {
@@ -183,8 +190,97 @@ void UIRomInfo::load(const Game &game) {
                 synoText->setOverflow(synopsisOverflow);
             }
         }
-        showText(synoText, synopsis);
+        // 简介翻页（LB/RB）：折行结果按 '\n' 切行，每游戏只算一次行高与每页行数，
+        // 先显示第一页；不可翻页时（含英文）显示内容与上面原实现完全一致
+        // 原实现（保留）：showText(synoText, synopsis);
+        setupSynopsisPages(synopsis);
+        showSynopsisPage();
     }
+}
+
+// 折行结果按 '\n' 切行；行高用与渲染同源的 findCharacterPos 度量（"X\nX" 两行之差），
+// 每页行数 = 简介框可用高度 / 行高。只在 load() 里算一次，翻页时不再测量。
+void UIRomInfo::setupSynopsisPages(const std::string &wrapped) {
+    synopsisLines.clear();
+    synopsisPage = 0;
+    synopsisPaged = false;
+    synopsisLinesPerPage = 1;
+
+    // 保留空行，避免行号错位
+    std::string line;
+    for (size_t i = 0; i < wrapped.size(); i++) {
+        if (wrapped[i] == '\n') {
+            synopsisLines.push_back(line);
+            line.clear();
+        } else {
+            line += wrapped[i];
+        }
+    }
+    synopsisLines.push_back(line);
+
+    if (synoText == nullptr || synoBox == nullptr) {
+        return;
+    }
+
+    Text probe("X\nX", synoText->getCharacterSize(), font);
+    float lineHeight = probe.findCharacterPos(2).y - probe.findCharacterPos(0).y;
+    if (lineHeight <= 0) {
+        return;
+    }
+
+    // 简介文本在框内从 rect.top 开始绘制，可用高度要扣掉这段上边距
+    float top = synoText->getPosition().y > 0 ? synoText->getPosition().y : 0;
+    int linesPerPage = (int) ((synoBox->getSize().y - top) / lineHeight);
+    if (linesPerPage < 1) {
+        linesPerPage = 1;
+    }
+
+    synopsisLinesPerPage = linesPerPage;
+    synopsisPaged = (int) synopsisLines.size() > linesPerPage;
+}
+
+void UIRomInfo::showSynopsisPage() {
+    if (synoText == nullptr) {
+        return;
+    }
+
+    int total = (int) synopsisLines.size();
+    int start = synopsisPage * synopsisLinesPerPage;
+    if (start < 0 || start >= total) {
+        start = 0;
+        synopsisPage = 0;
+    }
+
+    std::string page;
+    for (int i = 0; i < synopsisLinesPerPage && start + i < total; i++) {
+        if (i > 0) {
+            page += '\n';
+        }
+        page += synopsisLines[start + i];
+    }
+    showText(synoText, page);
+}
+
+bool UIRomInfo::pageUp() {
+    if (!synopsisPaged || synopsisPage <= 0) {
+        return false;
+    }
+    synopsisPage--;
+    showSynopsisPage();
+    return true;
+}
+
+bool UIRomInfo::pageDown() {
+    if (!synopsisPaged) {
+        return false;
+    }
+    int pages = ((int) synopsisLines.size() + synopsisLinesPerPage - 1) / synopsisLinesPerPage;
+    if (synopsisPage + 1 >= pages) {
+        return false;
+    }
+    synopsisPage++;
+    showSynopsisPage();
+    return true;
 }
 
 UIRomInfo::~UIRomInfo() {
